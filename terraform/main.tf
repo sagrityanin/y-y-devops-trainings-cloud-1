@@ -101,6 +101,10 @@ resource "yandex_compute_instance_group" "catgpt-group" {
     max_expansion = 2
     max_deleting = 2
   }
+  load_balancer {
+    target_group_name        = "target-group"
+    target_group_description = "load balancer target group"
+  }
 }
 
 
