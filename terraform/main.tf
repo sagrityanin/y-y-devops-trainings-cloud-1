@@ -23,6 +23,7 @@ resource "yandex_vpc_subnet" "foo" {
 
 resource "yandex_container_registry" "registry1" {
   name = "sagrityaninregistry"
+  folder_id = local.folder_id
 }
 
 locals {
@@ -32,11 +33,12 @@ locals {
   ])
   catgpt-sa-roles = toset([
     "container-registry.images.puller",
+    "container-registry.viewer",
     "monitoring.editor",
     "container-registry.images.pusher",
     "vpc.user",
     "editor",
-    "admin"
+    "admin",
   ])
 }
 resource "yandex_iam_service_account" "service-accounts" {
@@ -78,7 +80,7 @@ resource "yandex_compute_instance_group" "catgpt-group" {
     scheduling_policy {
       preemptible = true
     }
-
+    service_account_id = yandex_iam_service_account.service-accounts["sagrityanin1"].id
 
     metadata = {
       docker-compose = file("${path.module}/docker-compose.yaml")

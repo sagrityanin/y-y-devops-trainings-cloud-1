@@ -27,3 +27,5 @@ go.work
 */terraform.tfstate.backup
 */.terraform.tfstate.lock.info
 */s1_key.json
+keys/
+temp
