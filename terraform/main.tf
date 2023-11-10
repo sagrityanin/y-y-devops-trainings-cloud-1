@@ -34,6 +34,9 @@ locals {
     "container-registry.images.puller",
     "monitoring.editor",
     "container-registry.images.pusher",
+    "vpc.user",
+    "editor",
+  
   ])
 }
 resource "yandex_iam_service_account" "service-accounts" {
@@ -50,20 +53,16 @@ resource "yandex_resourcemanager_folder_iam_member" "catgpt-roles" {
 data "yandex_compute_image" "coi" {
   family = "container-optimized-image"
 }
-resource "yandex_compute_instance" "catgpt-1" {
-    platform_id        = "standard-v2"
-    service_account_id = yandex_iam_service_account.service-accounts["sagrityanin1"].id
+resource "yandex_compute_instance_group" "catgpt-group" {
+  name = "catgpt-group"
+  service_account_id = yandex_iam_service_account.service-accounts["sagrityanin1"].id
+  instance_template {
+    platform_id = "standard-v2"
+    
     resources {
       cores         = 2
       memory        = 1
       core_fraction = 5
-    }
-    scheduling_policy {
-      preemptible = true
-    }
-    network_interface {
-      subnet_id = "${yandex_vpc_subnet.foo.id}"
-      nat = true
     }
     boot_disk {
       initialize_params {
@@ -72,10 +71,34 @@ resource "yandex_compute_instance" "catgpt-1" {
         image_id = data.yandex_compute_image.coi.id
       }
     }
+    network_interface {
+      subnet_ids = ["${yandex_vpc_subnet.foo.id}"]
+      nat = true
+    }
+    scheduling_policy {
+      preemptible = true
+    }
+
+
     metadata = {
       docker-compose = file("${path.module}/docker-compose.yaml")
       ssh-keys  = "ubuntu:${file("~/.ssh/id_rsa.pub")}"
     }
+  }
+  scale_policy {
+    fixed_scale {
+      size = 2
+    }
+  }
+  allocation_policy {
+    zones = ["ru-central1-a"]
+  }
+  deploy_policy {
+    max_unavailable = 2
+    max_creating = 2
+    max_expansion = 2
+    max_deleting = 2
+  }
 }
 
 
