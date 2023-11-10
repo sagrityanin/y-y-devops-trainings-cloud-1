@@ -36,7 +36,7 @@ locals {
     "container-registry.images.pusher",
     "vpc.user",
     "editor",
-  
+    "admin"
   ])
 }
 resource "yandex_iam_service_account" "service-accounts" {
