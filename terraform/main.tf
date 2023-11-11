@@ -38,7 +38,7 @@ locals {
     "container-registry.images.pusher",
     "vpc.user",
     "editor",
-    "admin",
+    "admin"
   ])
 }
 resource "yandex_iam_service_account" "service-accounts" {
@@ -76,6 +76,7 @@ resource "yandex_compute_instance_group" "catgpt-group" {
     network_interface {
       subnet_ids = ["${yandex_vpc_subnet.foo.id}"]
       nat = true
+      
     }
     scheduling_policy {
       preemptible = true
