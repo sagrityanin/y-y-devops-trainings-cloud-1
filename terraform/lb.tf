@@ -2,7 +2,15 @@ resource "yandex_lb_network_load_balancer" "foo" {
   name = "sagrityanin-lb"
   
   deletion_protection = "false"
-  
+  listener {
+    name = "catgpt"
+    port = 8080
+    target_port = 8080
+    protocol    = "tcp"
+    external_address_spec {
+      ip_version = "ipv4"
+    }
+  }
   attached_target_group {
     target_group_id = yandex_compute_instance_group.catgpt-group.load_balancer.0.target_group_id
     healthcheck {
