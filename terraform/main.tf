@@ -20,7 +20,11 @@ resource "yandex_vpc_subnet" "foo" {
   network_id     = yandex_vpc_network.foo.id
   v4_cidr_blocks = ["10.5.0.0/24"]
 }
-
+resource "yandex_vpc_security_group" "group1" {
+  name        = "My security group"
+  description = "description for my security group"
+  network_id  = "${yandex_vpc_network.foo.id}"
+}
 resource "yandex_container_registry" "registry1" {
   name = "sagrityaninregistry"
   folder_id = local.folder_id
@@ -38,7 +42,6 @@ locals {
     "container-registry.images.pusher",
     "vpc.user",
     "editor",
-    "admin"
   ])
 }
 resource "yandex_iam_service_account" "service-accounts" {
@@ -76,7 +79,7 @@ resource "yandex_compute_instance_group" "catgpt-group" {
     network_interface {
       subnet_ids = ["${yandex_vpc_subnet.foo.id}"]
       nat = true
-      
+      security_group_ids =[yandex_vpc_security_group.group1.id]
     }
     scheduling_policy {
       preemptible = true
