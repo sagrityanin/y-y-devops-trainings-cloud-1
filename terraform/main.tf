@@ -13,7 +13,9 @@ provider "yandex" {
   zone                     = "ru-central1-a"
 }
 
-resource "yandex_vpc_network" "foo" {}
+resource "yandex_vpc_network" "foo" {
+  name = "my-net"
+}
 
 resource "yandex_vpc_subnet" "foo" {
   zone           = "ru-central1-a"
@@ -24,6 +26,18 @@ resource "yandex_vpc_security_group" "group1" {
   name        = "My security group"
   description = "description for my security group"
   network_id  = "${yandex_vpc_network.foo.id}"
+  labels = {
+    my-label = "catgpt-sg"
+  }
+}
+resource "yandex_vpc_security_group_rule" "rule1" {
+  security_group_binding = yandex_vpc_security_group.group1.id
+  direction              = "ingress"
+  description            = "rule1 description"
+  v4_cidr_blocks = ["10.5.0.0/24"]
+  from_port              = 8080
+  to_port                = 8080
+  protocol               = "TCP"
 }
 resource "yandex_container_registry" "registry1" {
   name = "sagrityaninregistry"
@@ -33,25 +47,36 @@ resource "yandex_container_registry" "registry1" {
 locals {
   folder_id = "b1g72ja3gj83ksl68q3h"
   service-accounts = toset([
-    "sagrityanin1", 
+    "sagrityanin1", "catgpt-ig-sa"
   ])
-  catgpt-sa-roles = toset([
+  catgpt-sagrityanin1-roles = toset([
     "container-registry.images.puller",
     "container-registry.viewer",
     "monitoring.editor",
-    "container-registry.images.pusher",
+  ])
+  catgpt-ig-sa-roles = toset([
+    "compute.editor",
+    "iam.serviceAccounts.user",
+    "load-balancer.admin",
+    "vpc.publicAdmin",
     "vpc.user",
-    "editor",
   ])
 }
+
 resource "yandex_iam_service_account" "service-accounts" {
   for_each = local.service-accounts
   name     = each.key
 }
 resource "yandex_resourcemanager_folder_iam_member" "catgpt-roles" {
-  for_each  = local.catgpt-sa-roles
+  for_each  = local.catgpt-sagrityanin1-roles
   folder_id = local.folder_id
   member    = "serviceAccount:${yandex_iam_service_account.service-accounts["sagrityanin1"].id}"
+  role      = each.key
+}
+resource "yandex_resourcemanager_folder_iam_member" "catgpt-ig-roles" {
+  for_each  = local.catgpt-ig-sa-roles
+  folder_id = local.folder_id
+  member    = "serviceAccount:${yandex_iam_service_account.service-accounts["catgpt-ig-sa"].id}"
   role      = each.key
 }
 
@@ -60,7 +85,10 @@ data "yandex_compute_image" "coi" {
 }
 resource "yandex_compute_instance_group" "catgpt-group" {
   name = "catgpt-group"
-  service_account_id = yandex_iam_service_account.service-accounts["sagrityanin1"].id
+  depends_on = [
+    yandex_resourcemanager_folder_iam_member.catgpt-ig-roles
+  ]
+  service_account_id = yandex_iam_service_account.service-accounts["catgpt-ig-sa"].id
   instance_template {
     platform_id = "standard-v2"
     
@@ -79,7 +107,7 @@ resource "yandex_compute_instance_group" "catgpt-group" {
     network_interface {
       subnet_ids = ["${yandex_vpc_subnet.foo.id}"]
       nat = true
-      security_group_ids =[yandex_vpc_security_group.group1.id]
+      
     }
     scheduling_policy {
       preemptible = true
@@ -87,7 +115,14 @@ resource "yandex_compute_instance_group" "catgpt-group" {
     service_account_id = yandex_iam_service_account.service-accounts["sagrityanin1"].id
 
     metadata = {
-      docker-compose = file("${path.module}/docker-compose.yaml")
+      docker-compose = templatefile(
+        "${path.module}/docker-compose.yaml",
+        {
+          folder_id   = "${local.folder_id}",
+          registry_id = "${yandex_container_registry.registry1.id}",
+        }
+      )
+      user-data = file("${path.module}/cloud-config.yaml")
       ssh-keys  = "ubuntu:${file("~/.ssh/id_rsa.pub")}"
     }
   }
