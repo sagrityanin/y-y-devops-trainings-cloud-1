@@ -52,8 +52,9 @@ resource "yandex_vpc_security_group" "group1" {
   }
   ingress {
     description = "helthcheck"
-    port   = 30080
-    protocol    = "tcp"
+    from_port   = 15
+    to_port     = 9091
+    protocol    = "Any"
     v4_cidr_blocks = ["0.0.0.0/0"]
   }
   egress {
@@ -134,7 +135,7 @@ resource "yandex_compute_instance_group" "catgpt-group" {
     network_interface {
       network_id = yandex_vpc_network.foo.id
       subnet_ids = ["${yandex_vpc_subnet.foo.id}"]
-      nat = false
+      nat = true
       security_group_ids = ["${yandex_vpc_security_group.group1.id}",]
     }
     scheduling_policy {
