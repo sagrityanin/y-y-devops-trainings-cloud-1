@@ -29,16 +29,43 @@ resource "yandex_vpc_security_group" "group1" {
   labels = {
     my-label = "catgpt-sg"
   }
+  ingress {
+    description = "Allow Inbound HTTP"
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    v4_cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+    description = "Allow Inbound HTTP"
+    from_port   = 9090
+    to_port     = 9090
+    protocol    = "tcp"
+    v4_cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+    description = "Allow Inbound ssh"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    v4_cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+    description = "helthcheck"
+    port   = 30080
+    protocol    = "tcp"
+    v4_cidr_blocks = ["0.0.0.0/0"]
+  }
+  egress {
+    description = "out "
+    from_port   = 15
+    to_port     = 9091
+    protocol    = "Any"
+    v4_cidr_blocks = ["0.0.0.0/0"]
+  }
 }
-resource "yandex_vpc_security_group_rule" "rule1" {
-  security_group_binding = yandex_vpc_security_group.group1.id
-  direction              = "ingress"
-  description            = "rule1 description"
-  v4_cidr_blocks = ["10.5.0.0/24"]
-  from_port              = 8080
-  to_port                = 8080
-  protocol               = "TCP"
-}
+
+ 
 resource "yandex_container_registry" "registry1" {
   name = "sagrityaninregistry"
   folder_id = local.folder_id
@@ -105,9 +132,10 @@ resource "yandex_compute_instance_group" "catgpt-group" {
       }
     }
     network_interface {
+      network_id = yandex_vpc_network.foo.id
       subnet_ids = ["${yandex_vpc_subnet.foo.id}"]
-      nat = true
-      
+      nat = false
+      security_group_ids = ["${yandex_vpc_security_group.group1.id}",]
     }
     scheduling_policy {
       preemptible = true

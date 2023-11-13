@@ -5,7 +5,6 @@ resource "yandex_lb_network_load_balancer" "foo" {
   
   attached_target_group {
     target_group_id = yandex_compute_instance_group.catgpt-group.load_balancer.0.target_group_id
-    
     healthcheck {
       name = "catgptcheck"
       interval            = 2
