@@ -20,9 +20,14 @@ resource "yandex_vpc_network" "foo" {
 resource "yandex_vpc_subnet" "foo" {
   zone           = "ru-central1-a"
   network_id     = yandex_vpc_network.foo.id
+  route_table_id = yandex_vpc_route_table.rt.id
   v4_cidr_blocks = ["10.5.0.0/24"]
 }
-
+resource "yandex_vpc_subnet" "ext" {
+  zone           = "ru-central1-a"
+  network_id     = yandex_vpc_network.foo.id
+  v4_cidr_blocks = ["10.6.0.0/24"]
+}
  
 resource "yandex_container_registry" "registry1" {
   name = "sagrityaninregistry"
@@ -93,8 +98,8 @@ resource "yandex_compute_instance_group" "catgpt-group" {
     network_interface {
       network_id = yandex_vpc_network.foo.id
       subnet_ids = ["${yandex_vpc_subnet.foo.id}"]
-      nat = true
-      
+      nat = false
+
       security_group_ids = ["${yandex_vpc_security_group.group1.id}",]
     }
     scheduling_policy {
