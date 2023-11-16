@@ -4,7 +4,7 @@ resource "yandex_lb_network_load_balancer" "foo" {
   deletion_protection = "false"
   listener {
     name = "catgpt"
-    port = 8080
+    port = 80
     target_port = 8080
     protocol    = "tcp"
     external_address_spec {

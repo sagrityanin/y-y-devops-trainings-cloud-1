@@ -25,30 +25,10 @@ resource "yandex_vpc_security_group" "group1" {
     protocol    = "any"
     v4_cidr_blocks = ["0.0.0.0/0"]
   }
-  ingress {
-    description = "helthcheck"
-    from_port   = 0
-    to_port     = 65535
-    protocol    = "tcp"
-    v4_cidr_blocks = ["198.18.235.0/24", "198.18.248.0/24"]
-  }
-  egress {
-    description = "test in "
-    from_port   = 0
-    to_port     = 65535
-    protocol    = "Any"
-    v4_cidr_blocks = ["0.0.0.0/0"]
-  }
   egress {
     description = "out "
     from_port   = 0
     to_port     = 65535
-    protocol    = "Any"
-    v4_cidr_blocks = ["0.0.0.0/0"]
-  }
-  egress {
-    description = "out "
-    port   = 80
     protocol    = "Any"
     v4_cidr_blocks = ["0.0.0.0/0"]
   }
@@ -74,8 +54,7 @@ resource "yandex_vpc_security_group" "group1" {
     protocol          = "TCP"
     description       = "The rule allows availability checks from the load balancer address range. It is required for the operation of a fault-tolerant cluster and load balancer services."
     predefined_target = "loadbalancer_healthchecks"
-    from_port         = 0
-    to_port           = 65535
+    port              = 8080
   }
   ingress {
     protocol          = "ANY"
