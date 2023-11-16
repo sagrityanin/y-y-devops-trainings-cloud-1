@@ -50,7 +50,7 @@ locals {
 
 resource "yandex_iam_service_account" "service-accounts" {
   for_each = local.service-accounts
-  name     = each.key
+  name     = "${local.folder_id}-${each.key}"
 }
 resource "yandex_resourcemanager_folder_iam_member" "catgpt-roles" {
   for_each  = local.catgpt-sagrityanin1-roles
@@ -68,6 +68,7 @@ resource "yandex_resourcemanager_folder_iam_member" "catgpt-ig-roles" {
 data "yandex_compute_image" "coi" {
   family = "container-optimized-image"
 }
+
 resource "yandex_compute_instance_group" "catgpt-group" {
   name = "catgpt-group"
   depends_on = [
@@ -92,7 +93,8 @@ resource "yandex_compute_instance_group" "catgpt-group" {
     network_interface {
       network_id = yandex_vpc_network.foo.id
       subnet_ids = ["${yandex_vpc_subnet.foo.id}"]
-      nat = false
+      nat = true
+      
       security_group_ids = ["${yandex_vpc_security_group.group1.id}",]
     }
     scheduling_policy {
