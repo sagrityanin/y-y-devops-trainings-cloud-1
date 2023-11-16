@@ -28,7 +28,19 @@ resource "yandex_vpc_subnet" "ext" {
   network_id     = yandex_vpc_network.foo.id
   v4_cidr_blocks = ["10.6.0.0/24"]
 }
- 
+resource "yandex_vpc_gateway" "nat_gateway" {
+  name = "test-gateway"
+  shared_egress_gateway {}
+}
+resource "yandex_vpc_route_table" "rt" {
+  name       = "test-route-table"
+  network_id = yandex_vpc_network.foo.id
+
+  static_route {
+    destination_prefix = "0.0.0.0/0"
+    gateway_id         = yandex_vpc_gateway.nat_gateway.id
+  }
+}
 resource "yandex_container_registry" "registry1" {
   name = "sagrityaninregistry"
   folder_id = local.folder_id
@@ -99,7 +111,6 @@ resource "yandex_compute_instance_group" "catgpt-group" {
       network_id = yandex_vpc_network.foo.id
       subnet_ids = ["${yandex_vpc_subnet.foo.id}"]
       nat = false
-
       security_group_ids = ["${yandex_vpc_security_group.group1.id}",]
     }
     scheduling_policy {
